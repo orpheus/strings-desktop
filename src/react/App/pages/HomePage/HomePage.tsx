@@ -4,14 +4,19 @@ import { useDrag, useDrop } from 'react-dnd'
 import { useQuery } from 'react-query'
 import { getThreadsApi } from '../../../apis/thread/get-threads-api'
 import { useCreateThreadMutation } from '../../../apis/thread/create-thread-api'
-import { IThread } from '../../../apis/thread/ithread'
+import { IThread } from '../../../apis/thread/IThread'
 import { useDeleteThreadMutation } from '../../../apis/thread/delete-thread-api'
+import { IString } from '../../../apis/string/IString'
+import { useCreateStringMutation } from '../../../apis/string/create-string-api'
+import { getStringsApi } from '../../../apis/string/get-strings-api'
 
 const HomePage = () => {
   const c = styles()
   const [threads, setThreads] = useState<IThread[]>([])
   const [activeThread, setActiveThread] = useState<IThread>()
   const [newThreadName, setNewThreadName] = useState<string>('')
+
+  const activeThreadId = activeThread?.id
 
   const [threadStringMap, setThreadStringMap] = useState<ThreadStringMap>(
     new Map())
@@ -21,14 +26,32 @@ const HomePage = () => {
   const { data: threadData } = useQuery('threads',
     getThreadsApi.call.bind(getThreadsApi))
 
+  const { data: stringData } = useQuery(['strings', activeThreadId],
+    () => getStringsApi.call.bind(getStringsApi)({ urlArgs: activeThreadId }),
+    {
+      enabled: Boolean(activeThreadId),
+    })
+
   // Mutation
   const createThreadMutation = useCreateThreadMutation()
   const deleteThreadMutation = useDeleteThreadMutation()
+
+  const createStringMutation = useCreateStringMutation()
 
   // Effects
   useEffect(() => {
     setThreads(threadData as IThread[])
   }, [threadData])
+
+  useEffect(() => {
+    if (activeThreadId) {
+      setThreadStringMap(prev => {
+        const newMap = new Map(prev)
+        newMap.set(activeThreadId, stringData)
+        return newMap
+      })
+    }
+  }, [activeThreadId, stringData])
 
   useEffect(() => {
     if (!activeThread && threads?.length > 0) {
@@ -68,13 +91,12 @@ const HomePage = () => {
     if (!activeThreadId) {
       return
     }
-    console.log("DELETING: ", activeThread?.name, activeThreadId)
     await deleteThreadMutation.mutate({
-      urlArgs: activeThreadId
+      urlArgs: activeThreadId,
     }, {
       onSuccess: () => {
         cleanupStateOnThreadDelete(activeThreadId)
-      }
+      },
     })
   }
 
@@ -82,12 +104,11 @@ const HomePage = () => {
     // Removes/filters out the active thread
     setThreads(prev => prev.filter(thread => thread.id !== activeThreadId))
 
-    // TODO(Remove all strings associated with the thread)
-    // setThreadStringMap(prev => {
-    //   const newState = new Map(prev)
-    //   newState.delete(activeThread)
-    //   return newState
-    // })
+    setThreadStringMap(prev => {
+      const newState = new Map(prev)
+      newState.delete(activeThreadId)
+      return newState
+    })
 
     // Sets the new active thread
     if (threads.length > 0) {
@@ -105,48 +126,65 @@ const HomePage = () => {
     setNewStringName('')
   }
 
-  // function handleCreateString () {
-  //   const strings = threadStringMap.get(activeThread) || []
-  //   const priority = strings.length
-  //
-  //   const newString: IString = {
-  //     name: newStringName,
-  //     thread: activeThread,
-  //     priority,
-  //   }
-  //
-  //   setThreadStringMap(prev => {
-  //     const newState = new Map(prev)
-  //     newState.set(activeThread, [...strings, newString])
-  //     return newState
-  //   })
-  //   setNewStringName('')
-  // }
+  async function handleCreateString () {
+    if (!activeThread) {
+      console.error('Cannot create string without active thread')
+      return
+    }
+    const strings = threadStringMap.get(activeThread.id) || []
+    const order = strings.length
 
-  // function handleOnKeyUpOnStringInput (e: React.KeyboardEvent<HTMLInputElement>) {
-  //   if (e.key === 'Enter') {
-  //     // Do something
-  //     handleCreateString()
-  //   }
-  // }
+    const newString = {
+      name: newStringName,
+      thread: activeThread.id,
+      order,
+    }
 
-  // function handleStringDragAndDrop (fromIndex: number, toIndex: number) {
-  //   setThreadStringMap(prev => {
-  //     const newState = new Map(prev)
-  //     const strings = newState.get(activeThread)
-  //     if (!strings) {
-  //       return prev
-  //     }
-  //     strings.splice(toIndex, 0, strings.splice(fromIndex, 1)[0])
-  //     const mappedStrings = strings.map((s, i) => {
-  //       s.priority = i
-  //       return s
-  //     })
-  //     newState.set(activeThread, mappedStrings)
-  //     return newState
-  //   })
-  // }
-  //
+    createStringMutation.mutate({
+      data: newString,
+    }, {
+      onSuccess: createdString => {
+        setThreadStringMap(prev => {
+          const newState = new Map(prev)
+          newState.set(activeThread.id, [...strings, createdString])
+          return newState
+        })
+        setNewStringName('')
+      },
+    })
+  }
+
+  async function handleOnKeyUpOnStringInput (e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      // Do something
+      await handleCreateString()
+    }
+  }
+
+  function handleStringDragAndDrop (fromIndex: number, toIndex: number) {
+    if (!activeThread) return
+
+    setThreadStringMap(prev => {
+      const newState = new Map(prev)
+      const strings = newState.get(activeThread.id)
+      if (!strings) {
+        return prev
+      }
+      // Splice the item out of its current position, and splice it
+      // into it's new position
+      strings.splice(toIndex, 0, strings.splice(fromIndex, 1)[0])
+
+      // Re-assign order. Can be optimized to only update order of those that changed
+      const mappedStrings = strings.map((s, i) => {
+        s.order = i
+        return s
+      })
+
+      newState.set(activeThread.id, mappedStrings)
+      return newState
+    })
+  }
+
   // function handleDeleteString (stringIndex: number) {
   //   setThreadStringMap(prev => {
   //     const newState = new Map(prev)
@@ -163,21 +201,23 @@ const HomePage = () => {
   //     return newState
   //   })
   // }
-  //
-  // function updateStringName (stringIndex: number, newName: string) {
-  //   setThreadStringMap(prev => {
-  //     const newState = new Map(prev)
-  //     const strings = newState.get(activeThread)
-  //     if (!strings) {
-  //       return prev
-  //     }
-  //     strings[stringIndex].name = newName
-  //     newState.set(activeThread, strings)
-  //     return newState
-  //   })
-  // }
 
-  // const strings = threadStringMap.get(activeThread) || []
+  function updateStringName (stringIndex: number, newName: string) {
+    if (!activeThread) return
+
+    setThreadStringMap(prev => {
+      const newState = new Map(prev)
+      const strings = newState.get(activeThread.id)
+      if (!strings) {
+        return prev
+      }
+      strings[stringIndex].name = newName
+      newState.set(activeThread.id, strings)
+      return newState
+    })
+  }
+
+  const strings = threadStringMap.get(activeThread?.id || '__no_thread') || []
 
   return <div className={c.root}>
     <div>
@@ -193,8 +233,9 @@ const HomePage = () => {
         Create Thread
       </button>
     </div>
-    <select value={activeThread?.id || "DEFAULT_VALUE"} onChange={handleSetActiveThread}>
-      <option value={"DEFAULT_VALUE"} disabled>Threads</option>
+    <select value={activeThread?.id || 'DEFAULT_VALUE'}
+            onChange={handleSetActiveThread}>
+      <option value={'DEFAULT_VALUE'} disabled>Threads</option>
       {threads?.map(thread => {
         return <option key={thread.id} value={thread.id}>
           {thread.name}
@@ -207,44 +248,44 @@ const HomePage = () => {
         Delete "{activeThread.name}" Thread
       </button>
     </span>}
-    {/*{activeThread && <>*/}
-    {/*  <div>*/}
-    {/*    <input type={'text'}*/}
-    {/*           placeholder={'string name'}*/}
-    {/*           value={newStringName}*/}
-    {/*           onKeyUp={handleOnKeyUpOnStringInput}*/}
-    {/*           onChange={e => setNewStringName(e.target.value)}*/}
-    {/*    />*/}
-    {/*    <button*/}
-    {/*      onClick={handleCreateString}*/}
-    {/*    >*/}
-    {/*      Create String for "{activeThread}" thread*/}
-    {/*    </button>*/}
-    {/*  </div>*/}
-    {/*  <StringField>*/}
-    {/*    <>*/}
-    {/*      {strings.map(s => {*/}
-    {/*        return <div key={s.name} style={{*/}
-    {/*          display: 'flex',*/}
-    {/*          alignItems: 'center',*/}
-    {/*        }}>*/}
-    {/*          <div style={{ width: 300 }}>*/}
-    {/*            <StringRow*/}
-    {/*              s={s}*/}
-    {/*              index={s.priority}*/}
-    {/*              handleStringDragAndDrop={handleStringDragAndDrop}*/}
-    {/*              updateStringName={updateStringName}*/}
-    {/*            />*/}
-    {/*          </div>*/}
-    {/*          <button onClick={() => handleDeleteString(s.priority)}>*/}
-    {/*            Delete {s.name}*/}
-    {/*          </button>*/}
-    {/*        </div>*/}
+    {activeThread && <>
+      <div>
+        <input type={'text'}
+               placeholder={'string name'}
+               value={newStringName}
+               onKeyUp={handleOnKeyUpOnStringInput}
+               onChange={e => setNewStringName(e.target.value)}
+        />
+        <button
+          onClick={handleCreateString}
+        >
+          Create String for "{activeThread?.name}" thread
+        </button>
+      </div>
+      <StringField>
+        <>
+          {strings.map((s: IString) => {
+            return <div key={s.name} style={{
+              display: 'flex',
+              alignItems: 'center',
+            }}>
+              <div style={{ width: 300 }}>
+                <StringRow
+                  s={s}
+                  index={s.order}
+                  handleStringDragAndDrop={handleStringDragAndDrop}
+                  updateStringName={updateStringName}
+                />
+              </div>
+              {/*<button onClick={() => handleDeleteString(s.priority)}>*/}
+              {/*  Delete {s.name}*/}
+              {/*</button>*/}
+            </div>
 
-    {/*      })}*/}
-    {/*    </>*/}
-    {/*  </StringField>*/}
-    {/*</>}*/}
+          })}
+        </>
+      </StringField>
+    </>}
   </div>
 }
 
@@ -301,7 +342,7 @@ const StringRow: FC<StringRowProps> = ({
   }
 
   function handleStringNameChange () {
-    updateStringName(s.priority, internalName)
+    updateStringName(s.order, internalName)
   }
 
   function handleStringNameClick () {
@@ -356,22 +397,14 @@ interface StringRowProps {
   updateStringName: (stringIndex: number, newName: string) => void
 }
 
-export default HomePage
-
-type threadUUID = string
-
-interface IString {
-  name: string
-  thread: IThread
-  priority: number
-  description?: string
-}
-
-type ThreadStringMap = Map<IThread, IString[]>
+type ThreadStringMap = Map<ThreadId, IString[]>
+type ThreadId = string
 
 const DRAG_AND_DROP_TYPES = {
   STRING: 'STRING',
 }
+
+export default HomePage
 
 
 

@@ -1,7 +1,7 @@
 import makeUseApiMutation from '../ApiMutation'
 import { threadController } from '../../constants/urls'
 import { AxiosRequestConfig } from 'axios'
-import { IThread } from './ithread'
+import { IThread } from './IThread'
 
 export const useCreateThreadMutation = makeUseApiMutation<CreateThreadReq, IThread>(
   'POST', threadController)

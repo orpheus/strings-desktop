@@ -5,19 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### [2022-07-10]
+## [2022-07-11]
+### Added
+- create/fetch strings from backend
+
+## [2022-07-10]
 ### Added
 - create/delete/fetch threads via backend
 
 ### Changed
 - commented out code as I switch to using a persistent backend
 
-### [2022-07-05]
+## [2022-07-05]
 ### Added
 - static: update string name
 - static: delete string
 
-### [2022-07-02]
+## [2022-07-02]
 ### Added
 - static: create/delete threads
 - static: create strings under threads
