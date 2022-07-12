@@ -9,6 +9,7 @@ import { useDeleteThreadMutation } from '../../../apis/thread/delete-thread-api'
 import { IString } from '../../../apis/string/IString'
 import { useCreateStringMutation } from '../../../apis/string/create-string-api'
 import { getStringsApi } from '../../../apis/string/get-strings-api'
+import { useDeleteStringMutation } from '../../../apis/string/delete-string-api'
 
 const HomePage = () => {
   const c = styles()
@@ -37,6 +38,7 @@ const HomePage = () => {
   const deleteThreadMutation = useDeleteThreadMutation()
 
   const createStringMutation = useCreateStringMutation()
+  const deleteStringMutation = useDeleteStringMutation()
 
   // Effects
   useEffect(() => {
@@ -185,22 +187,30 @@ const HomePage = () => {
     })
   }
 
-  // function handleDeleteString (stringIndex: number) {
-  //   setThreadStringMap(prev => {
-  //     const newState = new Map(prev)
-  //     const strings = newState.get(activeThread)
-  //     if (!strings) {
-  //       return prev
-  //     }
-  //     strings.splice(stringIndex, 1)
-  //     const mappedStrings = strings.map((s, i) => {
-  //       s.priority = i
-  //       return s
-  //     })
-  //     newState.set(activeThread, mappedStrings)
-  //     return newState
-  //   })
-  // }
+  async function handleDeleteString (string: IString) {
+    if (!activeThreadId) return
+
+    deleteStringMutation.mutate({
+      urlArgs: string.id
+    }, {
+      onSuccess: () => {
+        setThreadStringMap(prev => {
+          const newState = new Map(prev)
+          const strings = newState.get(activeThreadId)
+          if (!strings) {
+            return prev
+          }
+          strings.splice(string.order, 1)
+          const mappedStrings = strings.map((s, i) => {
+            s.order = i
+            return s
+          })
+          newState.set(activeThreadId, mappedStrings)
+          return newState
+        })
+      }
+    })
+  }
 
   function updateStringName (stringIndex: number, newName: string) {
     if (!activeThread) return
@@ -277,9 +287,9 @@ const HomePage = () => {
                   updateStringName={updateStringName}
                 />
               </div>
-              {/*<button onClick={() => handleDeleteString(s.priority)}>*/}
-              {/*  Delete {s.name}*/}
-              {/*</button>*/}
+              <button onClick={() => handleDeleteString(s)}>
+                Delete {s.name}
+              </button>
             </div>
 
           })}
