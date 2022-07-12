@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useEffect, useRef, useState } from 'react'
 import styles from './styles'
 import { useDrag, useDrop } from 'react-dnd'
 import { useQuery } from 'react-query'
@@ -10,6 +10,9 @@ import { IString } from '../../../apis/string/IString'
 import { useCreateStringMutation } from '../../../apis/string/create-string-api'
 import { getStringsApi } from '../../../apis/string/get-strings-api'
 import { useDeleteStringMutation } from '../../../apis/string/delete-string-api'
+import {
+  useUpdateStringNameMutation
+} from '../../../apis/string/update-string-name-api'
 
 const HomePage = () => {
   const c = styles()
@@ -39,6 +42,7 @@ const HomePage = () => {
 
   const createStringMutation = useCreateStringMutation()
   const deleteStringMutation = useDeleteStringMutation()
+  const updateStringNameMutation = useUpdateStringNameMutation()
 
   // Effects
   useEffect(() => {
@@ -212,18 +216,29 @@ const HomePage = () => {
     })
   }
 
-  function updateStringName (stringIndex: number, newName: string) {
+  async function updateStringName (string: IString, name: string) {
     if (!activeThread) return
 
-    setThreadStringMap(prev => {
-      const newState = new Map(prev)
-      const strings = newState.get(activeThread.id)
-      if (!strings) {
-        return prev
+    if (string.name === name) return
+
+    await updateStringNameMutation.mutate({
+      params: {
+        id: string.id,
+        name
       }
-      strings[stringIndex].name = newName
-      newState.set(activeThread.id, strings)
-      return newState
+    }, {
+      onSuccess: () => {
+        setThreadStringMap(prev => {
+          const newState = new Map(prev)
+          const strings = newState.get(activeThread.id)
+          if (!strings) {
+            return prev
+          }
+          strings[string.order].name = name
+          newState.set(activeThread.id, strings)
+          return newState
+        })
+      }
     })
   }
 
@@ -345,23 +360,32 @@ const StringRow: FC<StringRowProps> = ({
   const [editable, setEditable] = useState(false)
   const [internalName, setInternalName] = useState(s.name)
 
+  const inputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => setInternalName(s.name), [s.name])
+
+  useEffect(() => {
+    if (editable) {
+      inputRef.current?.focus()
+    }
+  }, [editable])
 
   function handleInternalNameChange (e: React.ChangeEvent<HTMLInputElement>) {
     setInternalName(e.target.value)
   }
 
-  function handleStringNameChange () {
-    updateStringName(s.order, internalName)
+  async function handleStringNameChange () {
+    await updateStringName(s, internalName)
+    setEditable(false)
   }
 
-  function handleStringNameClick () {
+  function handleStringNameDoubleClick () {
     setEditable(true)
   }
 
-  function handleOnKeyUpOnInternalNameInput (e: React.KeyboardEvent<HTMLInputElement>) {
+  async function handleOnKeyUpOnInternalNameInput (e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' || e.key === 'Escape') {
-      handleStringNameChange()
+      await handleStringNameChange()
     }
   }
 
@@ -372,7 +396,7 @@ const StringRow: FC<StringRowProps> = ({
     backgroundColor: isOver && canDrop ? 'red' : 'white',
   }}>
     {!editable && <div
-      onDoubleClick={handleStringNameClick}
+      onDoubleClick={handleStringNameDoubleClick}
       style={{ width: 100 }}
     >
       {s.name}
@@ -380,6 +404,7 @@ const StringRow: FC<StringRowProps> = ({
     }
     {editable &&
       <input
+        ref={inputRef}
         type={'text'}
         value={internalName}
         onChange={handleInternalNameChange}
@@ -404,7 +429,7 @@ interface StringRowProps {
   s: IString
   index: number
   handleStringDragAndDrop: (fromIndex: number, toIndex: number) => void
-  updateStringName: (stringIndex: number, newName: string) => void
+  updateStringName: (string: IString, name: string) => Promise<void>
 }
 
 type ThreadStringMap = Map<ThreadId, IString[]>

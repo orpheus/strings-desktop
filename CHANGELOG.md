@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ## [2022-07-12]
 ### Added
-- delete string from backend
+- delete string w/ api
+- update string name w/ api
 
 ## [2022-07-11]
 ### Added
