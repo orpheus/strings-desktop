@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - delete string w/ api
 - update string name w/ api
+- save order of strings on drag n drop w/ api
+
+### Changed
+- Removed the `threadStringMap` and using the query data directly with `refetch`
 
 ## [2022-07-11]
 ### Added

@@ -11,8 +11,11 @@ import { useCreateStringMutation } from '../../../apis/string/create-string-api'
 import { getStringsApi } from '../../../apis/string/get-strings-api'
 import { useDeleteStringMutation } from '../../../apis/string/delete-string-api'
 import {
-  useUpdateStringNameMutation
+  useUpdateStringNameMutation,
 } from '../../../apis/string/update-string-name-api'
+import {
+  useUpdateStringOrderMutation,
+} from '../../../apis/string/update-strings-order'
 
 const HomePage = () => {
   const c = styles()
@@ -22,18 +25,18 @@ const HomePage = () => {
 
   const activeThreadId = activeThread?.id
 
-  const [threadStringMap, setThreadStringMap] = useState<ThreadStringMap>(
-    new Map())
   const [newStringName, setNewStringName] = useState<string>('')
 
   // Queries
   const { data: threadData } = useQuery('threads',
     getThreadsApi.call.bind(getThreadsApi))
 
-  const { data: stringData } = useQuery(['strings', activeThreadId],
+  const { data: stringData, refetch: refetchStrings } = useQuery(
+    ['strings', activeThreadId],
     () => getStringsApi.call.bind(getStringsApi)({ urlArgs: activeThreadId }),
     {
       enabled: Boolean(activeThreadId),
+      staleTime: 5 * 60 * 1000,
     })
 
   // Mutation
@@ -43,21 +46,12 @@ const HomePage = () => {
   const createStringMutation = useCreateStringMutation()
   const deleteStringMutation = useDeleteStringMutation()
   const updateStringNameMutation = useUpdateStringNameMutation()
+  const updateStringOrderMutation = useUpdateStringOrderMutation()
 
   // Effects
   useEffect(() => {
     setThreads(threadData as IThread[])
   }, [threadData])
-
-  useEffect(() => {
-    if (activeThreadId) {
-      setThreadStringMap(prev => {
-        const newMap = new Map(prev)
-        newMap.set(activeThreadId, stringData)
-        return newMap
-      })
-    }
-  }, [activeThreadId, stringData])
 
   useEffect(() => {
     if (!activeThread && threads?.length > 0) {
@@ -110,12 +104,6 @@ const HomePage = () => {
     // Removes/filters out the active thread
     setThreads(prev => prev.filter(thread => thread.id !== activeThreadId))
 
-    setThreadStringMap(prev => {
-      const newState = new Map(prev)
-      newState.delete(activeThreadId)
-      return newState
-    })
-
     // Sets the new active thread
     if (threads.length > 0) {
       // The new state is not yet flushed, so check if it's the thread we're deleting
@@ -137,8 +125,11 @@ const HomePage = () => {
       console.error('Cannot create string without active thread')
       return
     }
-    const strings = threadStringMap.get(activeThread.id) || []
-    const order = strings.length
+    if (!newStringName) {
+      console.log('Skipping string creation with empty name')
+      return
+    }
+    const order = stringData.length
 
     const newString = {
       name: newStringName,
@@ -149,12 +140,8 @@ const HomePage = () => {
     createStringMutation.mutate({
       data: newString,
     }, {
-      onSuccess: createdString => {
-        setThreadStringMap(prev => {
-          const newState = new Map(prev)
-          newState.set(activeThread.id, [...strings, createdString])
-          return newState
-        })
+      onSuccess: async () => {
+        await refetchStrings()
         setNewStringName('')
       },
     })
@@ -167,82 +154,65 @@ const HomePage = () => {
     }
   }
 
+  /**
+   * Reorders the strings in memory, updates the string order in the backend,
+   * then updates the local react state
+   * @param fromIndex - string at index
+   * @param toIndex - index to move string
+   */
   function handleStringDragAndDrop (fromIndex: number, toIndex: number) {
-    if (!activeThread) return
+    // Why does this become unsorted after a while? (after first drag and drop)
+    const strings = [...stringData]
+    strings.sort((a: IString, b: IString) => {
+      return a.order - b.order
+    })
 
-    setThreadStringMap(prev => {
-      const newState = new Map(prev)
-      const strings = newState.get(activeThread.id)
-      if (!strings) {
-        return prev
-      }
-      // Splice the item out of its current position, and splice it
-      // into it's new position
-      strings.splice(toIndex, 0, strings.splice(fromIndex, 1)[0])
+    // Splice the item out of its current position, and splice it
+    // into it's new position
+    strings.splice(toIndex, 0, strings.splice(fromIndex, 1)[0])
 
-      // Re-assign order. Can be optimized to only update order of those that changed
-      const mappedStrings = strings.map((s, i) => {
-        s.order = i
-        return s
-      })
+    // Re-assign order. Can be optimized to only update order of those that changed
+    const mappedStrings = strings.map((s, i) => {
+      s.order = i
+      return s
+    })
 
-      newState.set(activeThread.id, mappedStrings)
-      return newState
+    updateStringOrderMutation.mutate({
+      data: mappedStrings.map(
+        s => ({ name: s.name, order: s.order, id: s.id })),
+    }, {
+      onSuccess: async () => {
+        await refetchStrings()
+      },
     })
   }
 
   async function handleDeleteString (string: IString) {
-    if (!activeThreadId) return
-
     deleteStringMutation.mutate({
-      urlArgs: string.id
+      urlArgs: string.id,
     }, {
-      onSuccess: () => {
-        setThreadStringMap(prev => {
-          const newState = new Map(prev)
-          const strings = newState.get(activeThreadId)
-          if (!strings) {
-            return prev
-          }
-          strings.splice(string.order, 1)
-          const mappedStrings = strings.map((s, i) => {
-            s.order = i
-            return s
-          })
-          newState.set(activeThreadId, mappedStrings)
-          return newState
-        })
-      }
+      onSuccess: async () => {
+        await refetchStrings()
+      },
     })
   }
 
   async function updateStringName (string: IString, name: string) {
-    if (!activeThread) return
-
     if (string.name === name) return
 
     await updateStringNameMutation.mutate({
       params: {
         id: string.id,
-        name
-      }
+        name,
+      },
     }, {
-      onSuccess: () => {
-        setThreadStringMap(prev => {
-          const newState = new Map(prev)
-          const strings = newState.get(activeThread.id)
-          if (!strings) {
-            return prev
-          }
-          strings[string.order].name = name
-          newState.set(activeThread.id, strings)
-          return newState
-        })
-      }
+      onSuccess: async () => {
+        await refetchStrings()
+      },
     })
   }
 
-  const strings = threadStringMap.get(activeThread?.id || '__no_thread') || []
+  const strings = stringData || []
 
   return <div className={c.root}>
     <div>
@@ -389,7 +359,7 @@ const StringRow: FC<StringRowProps> = ({
     }
   }
 
-  return <div ref={node => drag(drop(node))} style={{
+  return <div ref={node => editable ? node :drag(drop(node))} style={{
     opacity: isDragging ? 0.5 : 1,
     height: 30,
     borderBottom: '1px solid black',
@@ -397,7 +367,7 @@ const StringRow: FC<StringRowProps> = ({
   }}>
     {!editable && <div
       onDoubleClick={handleStringNameDoubleClick}
-      style={{ width: 100 }}
+      style={{ width: 200 }}
     >
       {s.name}
     </div>
@@ -431,9 +401,6 @@ interface StringRowProps {
   handleStringDragAndDrop: (fromIndex: number, toIndex: number) => void
   updateStringName: (string: IString, name: string) => Promise<void>
 }
-
-type ThreadStringMap = Map<ThreadId, IString[]>
-type ThreadId = string
 
 const DRAG_AND_DROP_TYPES = {
   STRING: 'STRING',

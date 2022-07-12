@@ -2,16 +2,17 @@ import makeUseApiMutation from '../ApiMutation'
 import { stringController } from '../../constants/urls'
 import { AxiosRequestConfig } from 'axios'
 
-export const useUpdateStringNameMutation = makeUseApiMutation<StringReqConfig, boolean>(
+export const useUpdateStringOrderMutation = makeUseApiMutation<StringReqConfig, boolean>(
   'PUT',
-  `${stringController}/updateName`)
+  `${stringController}/updateOrder`)
 
 interface StringReqConfig extends AxiosRequestConfig {
-  params: StringParams
+  data: StringOrderData[]
 }
 
-interface StringParams {
+interface StringOrderData {
   id: string
-  name: string
+  order: number
+  name?: string
 }
 
