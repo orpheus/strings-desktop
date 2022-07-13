@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef, useState } from 'react'
+import React, { FC, useCallback, useEffect, useRef, useState } from 'react'
 import styles from './styles'
 import { useDrag, useDrop } from 'react-dnd'
 import { useQuery } from 'react-query'
@@ -160,7 +160,7 @@ const HomePage = () => {
    * @param fromIndex - string at index
    * @param toIndex - index to move string
    */
-  function handleStringDragAndDrop (fromIndex: number, toIndex: number) {
+  const handleStringDragAndDrop = useCallback((fromIndex: number, toIndex: number) => {
     // Why does this become unsorted after a while? (after first drag and drop)
     const strings = [...stringData]
     strings.sort((a: IString, b: IString) => {
@@ -185,7 +185,7 @@ const HomePage = () => {
         await refetchStrings()
       },
     })
-  }
+  }, [refetchStrings, stringData, updateStringOrderMutation])
 
   async function handleDeleteString (string: IString) {
     deleteStringMutation.mutate({
@@ -317,7 +317,7 @@ const StringRow: FC<StringRowProps> = ({
         handleStringDragAndDrop(item.index, index)
       }
     },
-  }), [index])
+  }), [index, handleStringDragAndDrop])
 
   const [{ isDragging }, drag, dragPreview] = useDrag(() => ({
     type: DRAG_AND_DROP_TYPES.STRING,
