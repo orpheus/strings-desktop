@@ -10,6 +10,7 @@ export default createUseStyles(theme => {
       borderLeft: 'none',
       // borderBottom: 'none',
       display: 'flex',
+      boxSizing: 'border-box'
     },
     panelLeft: {
       flex: 1,

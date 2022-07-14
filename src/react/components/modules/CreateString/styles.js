@@ -6,7 +6,8 @@ export default createUseStyles(theme => {
       height: 40,
       backgroundColor: theme.color.dark,
       borderBottom: `1px solid ${theme.color.light}`,
-      display: 'flex'
+      display: 'flex',
+      boxSizing: 'border-box'
     },
     input: {
       background: 'none',

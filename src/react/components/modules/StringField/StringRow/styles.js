@@ -4,7 +4,8 @@ export default createUseStyles(theme => {
   return {
     root: {
       width: '100%',
-      height: 50,
+      height: 40,
+      boxSizing: 'border-box',
       borderBottom: '1px solid white',
       color: 'white',
       display: 'flex',
