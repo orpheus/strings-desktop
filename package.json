@@ -57,7 +57,9 @@
                   "name": "main_window"
                 }
               ]
-            }
+            },
+            "port": 3000,
+            "loggerPort": 9001
           }
         ]
       ]

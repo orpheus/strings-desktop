@@ -1,13 +1,13 @@
 {
   "env": "default",
   "host": "localhost",
-  "port": "8000",
+  "port": "8080",
   "publicPath": "/",
   "assetPath": "assets",
   "jsSourcePath": "src",
   "html": {
     "name": "homepage",
-    "title": "EXP",
+    "title": "Strings",
     "filename": "index.html"
   }
 }
