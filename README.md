@@ -6,7 +6,17 @@ Electron desktop application for my `Strings` application using React and TypeSc
 
 Start [the backend application](https://github.com/orpheus/strings).
 
-With node installed (built with `v16.15.1`), run `npm start`
+With node installed (built with `v16.15.1`), run:
+
+```
+npm i && npm start
+```
+
+or with yarn: 
+
+```
+yarn install & yarn start
+```
 
 ### Source Code
 
