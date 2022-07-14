@@ -1,6 +1,5 @@
-import React, { FC, useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import styles from './styles'
-import { useDrag, useDrop } from 'react-dnd'
 import { useQuery } from 'react-query'
 import { getThreadsApi } from '../../../apis/thread/get-threads-api'
 import { useCreateThreadMutation } from '../../../apis/thread/create-thread-api'
@@ -16,6 +15,12 @@ import {
 import {
   useUpdateStringOrderMutation,
 } from '../../../apis/string/update-strings-order'
+import Header from '../../../components/modules/Header/Header'
+import ThreadPanel from '../../../components/modules/ThreadPanel/ThreadPanel'
+import CreateString from '../../../components/modules/CreateString/CreateString'
+import StringField from '../../../components/modules/StringField/StringField'
+import StringRow
+  from '../../../components/modules/StringField/StringRow/StringRow'
 
 const HomePage = () => {
   const c = styles()
@@ -160,32 +165,33 @@ const HomePage = () => {
    * @param fromIndex - string at index
    * @param toIndex - index to move string
    */
-  const handleStringDragAndDrop = useCallback((fromIndex: number, toIndex: number) => {
-    // Why does this become unsorted after a while? (after first drag and drop)
-    const strings = [...stringData]
-    strings.sort((a: IString, b: IString) => {
-      return a.order - b.order
-    })
+  const handleStringDragAndDrop = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      // Why does this become unsorted after a while? (after first drag and drop)
+      const strings = [...stringData]
+      strings.sort((a: IString, b: IString) => {
+        return a.order - b.order
+      })
 
-    // Splice the item out of its current position, and splice it
-    // into it's new position
-    strings.splice(toIndex, 0, strings.splice(fromIndex, 1)[0])
+      // Splice the item out of its current position, and splice it
+      // into it's new position
+      strings.splice(toIndex, 0, strings.splice(fromIndex, 1)[0])
 
-    // Re-assign order. Can be optimized to only update order of those that changed
-    const mappedStrings = strings.map((s, i) => {
-      s.order = i
-      return s
-    })
+      // Re-assign order. Can be optimized to only update order of those that changed
+      const mappedStrings = strings.map((s, i) => {
+        s.order = i
+        return s
+      })
 
-    updateStringOrderMutation.mutate({
-      data: mappedStrings.map(
-        s => ({ name: s.name, order: s.order, id: s.id })),
-    }, {
-      onSuccess: async () => {
-        await refetchStrings()
-      },
-    })
-  }, [refetchStrings, stringData, updateStringOrderMutation])
+      updateStringOrderMutation.mutate({
+        data: mappedStrings.map(
+          s => ({ name: s.name, order: s.order, id: s.id })),
+      }, {
+        onSuccess: async () => {
+          await refetchStrings()
+        },
+      })
+    }, [refetchStrings, stringData, updateStringOrderMutation])
 
   async function handleDeleteString (string: IString) {
     deleteStringMutation.mutate({
@@ -215,195 +221,39 @@ const HomePage = () => {
   const strings = stringData || []
 
   return <div className={c.root}>
-    <div>
-      <input type={'text'}
-             placeholder={'thread name'}
-             value={newThreadName}
-             onKeyUp={handleOnKeyUpOnThreadInput}
-             onChange={e => setNewThreadName(e.target.value)}
-      />
-      <button
-        onClick={handleCreateThread}
-      >
-        Create Thread
-      </button>
-    </div>
-    <select value={activeThread?.id || 'DEFAULT_VALUE'}
-            onChange={handleSetActiveThread}>
-      <option value={'DEFAULT_VALUE'} disabled>Threads</option>
-      {threads?.map(thread => {
-        return <option key={thread.id} value={thread.id}>
-          {thread.name}
-        </option>
-      })}
-    </select>
-    {activeThread && <span>
-      <button
-        onClick={handleDeleteThread}>
-        Delete "{activeThread.name}" Thread
-      </button>
-    </span>}
+    <Header
+      title={'Strings'}
+    />
+    <ThreadPanel
+      handleThreadSelect={handleSetActiveThread}
+      threads={threads}
+      activeThread={activeThread}
+      newThreadName={newThreadName}
+      handleOnKeyUpOnThreadInput={handleOnKeyUpOnThreadInput}
+      setNewThreadName={setNewThreadName}
+      handleCreateThread={handleCreateThread}
+      handleDeleteThread={handleDeleteThread}
+    />
     {activeThread && <>
-      <div>
-        <input type={'text'}
-               placeholder={'string name'}
-               value={newStringName}
-               onKeyUp={handleOnKeyUpOnStringInput}
-               onChange={e => setNewStringName(e.target.value)}
-        />
-        <button
-          onClick={handleCreateString}
-        >
-          Create String for "{activeThread?.name}" thread
-        </button>
-      </div>
+      <CreateString handleOnKeyUpOnStringInput={handleOnKeyUpOnStringInput}
+                    newStringName={newStringName}
+                    setNewStringName={setNewStringName}/>
       <StringField>
         <>
           {strings.map((s: IString) => {
-            return <div key={s.name} style={{
-              display: 'flex',
-              alignItems: 'center',
-            }}>
-              <div style={{ width: 300 }}>
-                <StringRow
-                  s={s}
-                  index={s.order}
-                  handleStringDragAndDrop={handleStringDragAndDrop}
-                  updateStringName={updateStringName}
-                />
-              </div>
-              <button onClick={() => handleDeleteString(s)}>
-                Delete {s.name}
-              </button>
-            </div>
-
+            return <StringRow
+              key={s.name}
+              s={s}
+              index={s.order}
+              handleStringDragAndDrop={handleStringDragAndDrop}
+              updateStringName={updateStringName}
+              handleDeleteString={handleDeleteString}
+            />
           })}
         </>
       </StringField>
     </>}
   </div>
-}
-
-const StringField = ({ children }: StringFieldProps) => {
-  return <div role={'string-field'}>
-    {children}
-  </div>
-}
-
-interface StringFieldProps {
-  children: JSX.Element
-}
-
-const StringRow: FC<StringRowProps> = ({
-  s,
-  index,
-  handleStringDragAndDrop,
-  updateStringName,
-}) => {
-  const [
-    {
-      canDrop,
-      isOver,
-    }, drop] = useDrop<DropTarget, unknown, CollectedProps>(() => ({
-    // The type (or types) to accept - strings or symbols
-    accept: DRAG_AND_DROP_TYPES.STRING,
-    // Props to collect
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop() && monitor.getItem().index !== index,
-    }),
-    drop: (item) => {
-      if (item.index !== index) {
-        handleStringDragAndDrop(item.index, index)
-      }
-    },
-  }), [index, handleStringDragAndDrop])
-
-  const [{ isDragging }, drag, dragPreview] = useDrag(() => ({
-    type: DRAG_AND_DROP_TYPES.STRING,
-    item: { index },
-    collect: monitor => ({
-      isDragging: monitor.isDragging(),
-    }),
-  }), [index])
-
-  const [editable, setEditable] = useState(false)
-  const [internalName, setInternalName] = useState(s.name)
-
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => setInternalName(s.name), [s.name])
-
-  useEffect(() => {
-    if (editable) {
-      inputRef.current?.focus()
-    }
-  }, [editable])
-
-  function handleInternalNameChange (e: React.ChangeEvent<HTMLInputElement>) {
-    setInternalName(e.target.value)
-  }
-
-  async function handleStringNameChange () {
-    await updateStringName(s, internalName)
-    setEditable(false)
-  }
-
-  function handleStringNameDoubleClick () {
-    setEditable(true)
-  }
-
-  async function handleOnKeyUpOnInternalNameInput (e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === 'Escape') {
-      await handleStringNameChange()
-    }
-  }
-
-  return <div ref={node => editable ? node :drag(drop(node))} style={{
-    opacity: isDragging ? 0.5 : 1,
-    height: 30,
-    borderBottom: '1px solid black',
-    backgroundColor: isOver && canDrop ? 'red' : 'white',
-  }}>
-    {!editable && <div
-      onDoubleClick={handleStringNameDoubleClick}
-      style={{ width: 200 }}
-    >
-      {s.name}
-    </div>
-    }
-    {editable &&
-      <input
-        ref={inputRef}
-        type={'text'}
-        value={internalName}
-        onChange={handleInternalNameChange}
-        onBlur={handleStringNameChange}
-        onKeyUp={handleOnKeyUpOnInternalNameInput}
-      />
-    }
-    {/*<div role="Handle" ref={drag}/>*/}
-  </div>
-}
-
-interface CollectedProps {
-  isOver: boolean
-  canDrop: boolean
-}
-
-interface DropTarget {
-  index: number
-}
-
-interface StringRowProps {
-  s: IString
-  index: number
-  handleStringDragAndDrop: (fromIndex: number, toIndex: number) => void
-  updateStringName: (string: IString, name: string) => Promise<void>
-}
-
-const DRAG_AND_DROP_TYPES = {
-  STRING: 'STRING',
 }
 
 export default HomePage

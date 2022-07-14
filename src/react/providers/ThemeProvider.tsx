@@ -1,10 +1,10 @@
 import React from 'react'
 import { ThemeProvider } from 'react-jss'
-import primaryTheme from '../theme/primarytheme'
+import PrimaryTheme from '../theme/PrimaryTheme'
 import { IProviderProps } from './RootProvider'
 
 const ExpThemeProvider = ({ children }: IProviderProps) => {
-  return <ThemeProvider theme={primaryTheme}>
+  return <ThemeProvider theme={PrimaryTheme}>
     {children}
   </ThemeProvider>
 }

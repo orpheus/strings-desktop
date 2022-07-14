@@ -1,12 +1,11 @@
 import { createUseStyles } from 'react-jss'
 
 export default createUseStyles(theme => {
-  const primary = theme.color.primary
   return {
     root: {
       height: '100%',
       width: '100%',
-      backgroundColor: '#fff',
+      backgroundColor: theme.color.primary,
       color: '#000'
     }
   }

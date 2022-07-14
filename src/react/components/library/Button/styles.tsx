@@ -1,5 +1,5 @@
 import { createUseStyles } from 'react-jss'
-import { MainTheme } from '../../../theme/primarytheme'
+import { MainTheme } from '../../../theme/PrimaryTheme'
 
 export default createUseStyles((theme: MainTheme) => {
   // console.log("Button-Theme: ", theme)
@@ -29,12 +29,12 @@ export default createUseStyles((theme: MainTheme) => {
         '&:disabled': {
           cursor: 'default',
           background: background,
-          borderColor:  'grey',
+          borderColor: 'grey',
           fontWeight: 'normal',
-          color: 'grey'
-        }
+          color: 'grey',
+        },
       }
-    }
+    },
   }
 }, { name: 'Button-styles' })
 
