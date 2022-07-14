@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
-## [0.1.0]  2022-07-14
+## [0.1.0] - 2022-07-14
 0.1.0 brings thread and string creation with a drag and drop prioritize-able interface. 
 
 ### [2022-07-13]
