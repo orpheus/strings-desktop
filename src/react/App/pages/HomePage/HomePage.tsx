@@ -240,11 +240,11 @@ const HomePage = () => {
                     setNewStringName={setNewStringName}/>
       <StringField>
         <>
-          {strings.map((s: IString) => {
+          {strings.map((s: IString, index: number) => {
             return <StringRow
               key={s.name}
               s={s}
-              index={s.order}
+              index={index}
               handleStringDragAndDrop={handleStringDragAndDrop}
               updateStringName={updateStringName}
               handleDeleteString={handleDeleteString}
