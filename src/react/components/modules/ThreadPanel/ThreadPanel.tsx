@@ -13,6 +13,7 @@ const ThreadPanel: FC<ThreadPanelProps> = ({
   handleDeleteThread,
 }) => {
   const c = styles()
+  const sortedThreads = threads?.sort((a, b) => a.name.localeCompare(b.name))
   return <div className={c.root}>
     <div className={c.panelLeft}>
       <input type={'text'}
@@ -23,18 +24,13 @@ const ThreadPanel: FC<ThreadPanelProps> = ({
              className={c.input}
       />
     </div>
-    {/*<button*/}
-    {/*  onClick={handleCreateThread}*/}
-    {/*>*/}
-    {/*  +*/}
-    {/*</button>*/}
     <div className={c.panelRight}>
       <select
         className={c.select}
         value={activeThread?.id || 'DEFAULT_VALUE'}
         onChange={handleThreadSelect}>
         <option value={'DEFAULT_VALUE'} disabled>Threads</option>
-        {threads?.map(thread => {
+        {sortedThreads?.map(thread => {
           return <option key={thread.id} value={thread.id}>
             {thread.name}
           </option>
