@@ -4,8 +4,8 @@ export default createUseStyles(theme => {
   return {
     root: {
       padding: 10,
-      width: '100%'
-      // borderBottom: `1px solid ${theme.color.light}`
+      width: '100%',
+      boxSizing: 'border-box'
     },
     flexbox: {
       display: 'flex',
