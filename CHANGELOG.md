@@ -7,13 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UNRELEASED]
 
 ## [0.1.1] - 2022-07-17
-### Fixed
+#### Fixed
 - string was using .order as an ordering index instead of .index
   - was causing problems after deleting. still possible .index bugs
 - Styles
   - overflow text now shows as a big block instead of coming outside the row borders
   - adding margin-bottom to StringField so that there was room to see the bottom string
   - standardized box-sizings on the main containers to be the same height (thread row, string row, stringfield)
+
+#### Added
+- localStorage persistence of the activeThread
 
 ## [0.1.0] - 2022-07-14
 0.1.0 brings thread and string creation with a drag and drop prioritize-able interface. 

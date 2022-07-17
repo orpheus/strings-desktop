@@ -60,7 +60,12 @@ const HomePage = () => {
 
   useEffect(() => {
     if (!activeThread && threads?.length > 0) {
-      setActiveThread(threads[0])
+      const localActiveThreadId = window.localStorage.getItem('activeThread')
+      let thread = threads[0]
+      if (localActiveThreadId) {
+        thread = threads.find((t: IThread) => t.id == localActiveThreadId) || thread
+      }
+      setActiveThread(thread)
     }
   }, [threads, activeThread])
 
@@ -88,7 +93,9 @@ const HomePage = () => {
   }
 
   function handleSetActiveThread (e: React.ChangeEvent<HTMLSelectElement>) {
-    setActiveThread(threads.find(t => t.id === e.target.value))
+    const value = e.target.value
+    window.localStorage.setItem('activeThread', value)
+    setActiveThread(threads.find(t => t.id === value))
   }
 
   async function handleDeleteThread () {
