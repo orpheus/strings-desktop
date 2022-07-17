@@ -4,12 +4,15 @@ export default createUseStyles(theme => {
   return {
     root: {
       width: '100%',
-      height: 40,
+      minHeight: 40,
       boxSizing: 'border-box',
       borderBottom: '1px solid white',
       color: 'white',
       display: 'flex',
-      alignItems: 'center'
+      alignItems: 'center',
+      padding: 10,
+      background: 'cadetblue',
+      wordBreak: 'break-all'
     },
     input: {
       flex: 1,
@@ -24,8 +27,8 @@ export default createUseStyles(theme => {
     },
     text: {
       height: '100%',
-      display: 'flex',
-      alignItems: 'center',
+      // display: 'flex',
+      // alignItems: 'center',
       fontFamily: 'monospace',
       paddingLeft: 15,
       fontSize: theme.fontSize.main,

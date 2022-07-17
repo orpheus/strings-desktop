@@ -4,7 +4,9 @@ import styles from './styles'
 const StringField: FC<StringFieldProps> = ({ children }) => {
   const c = styles()
   return <div className={c.root}>
-    {children}
+    <div className={c.padding}>
+      {children}
+    </div>
   </div>
 }
 
