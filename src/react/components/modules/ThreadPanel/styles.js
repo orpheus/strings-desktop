@@ -68,6 +68,9 @@ export default createUseStyles(theme => {
       fontSize: theme.fontSize.default,
       paddingRight: 10,
       fontFamily: 'monospace'
+    },
+    threadName: {
+
     }
   }
 }, {name: "ThreadPanel"})

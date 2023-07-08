@@ -32,7 +32,7 @@ const ThreadPanel: FC<ThreadPanelProps> = ({
         <option value={'DEFAULT_VALUE'} disabled>Threads</option>
         {sortedThreads?.map(thread => {
           return <option key={thread.id} value={thread.id}>
-            {thread.name}
+            <span className={c.threadName}>{thread.name}</span>
           </option>
         })}
       </select>
