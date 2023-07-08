@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## Changed
+- reversed primary/secondary colors
+- lowered string text font size to 12 to match string input font size
+
 ## [1.0.0] - 2023-07-07
 
 ### Notes

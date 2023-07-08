@@ -1,7 +1,7 @@
 const PrimaryTheme = {
   color: {
-    primary: '#c52e6c',
-    secondary: '#246181',
+    primary: '#246181',
+    secondary: '#c52e6c',
     dark: '#000',
     light: '#fff'
   },
@@ -11,7 +11,7 @@ const PrimaryTheme = {
   },
   fontSize: {
     default: 12,
-    main: 14
+    main: 12
   }
 }
 

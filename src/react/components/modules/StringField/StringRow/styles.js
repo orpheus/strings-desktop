@@ -11,7 +11,7 @@ export default createUseStyles(theme => {
       display: 'flex',
       alignItems: 'center',
       padding: 10,
-      background: 'cadetblue',
+      background: 'black',
       wordBreak: 'break-all'
     },
     input: {
